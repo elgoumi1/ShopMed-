@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public catalog products & categories: Read-only for public, write for admin
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Affiliate Clicks: Any client can log a click event, admin can read analytics
+    match /clicks/{clickId} {
+      allow create: if true;
+      allow read: if request.auth != null && request.auth.token.admin == true;
+      allow update, delete: if false;
+    }
+
+    // Price Alerts: Users can create and read their own alerts
+    match /price_alerts/{alertId} {
+      allow create: if true;
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow update: if false;
+    }
+
+    // User profiles & favorites
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /favorites/{favoriteId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
